@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { categories } from "@/db/schema";
 import "@passport/index";
 
-import { eq } from "drizzle-orm";
+import { eq, ilike } from "drizzle-orm";
 import { Request, Response, Router } from "express";
 import { isAdmin, isAuthenticated } from "./auth";
 
@@ -22,23 +22,53 @@ export default class Category {
   }
 
   async get(req: Request, res: Response) {
-    const categories = await db.query.categories.findMany({});
-    res.json(categories);
+    const method = `${req.query.method}`;
+
+    let result;
+    if (method === "search") {
+      // if the method is `search`, it needs `q`
+      const q = `${req.query.q || ""}`;
+      if (q === "") {
+        return res.status(400).json({ message: "invalid query (search)" });
+      }
+
+      result = await db.query.categories.findMany({
+        where: ilike(categories.name, `%${q}%`),
+      });
+    } else {
+      result = await db.query.categories.findMany({});
+    }
+
+    res.json(result);
   }
 
   async getWithBooks(req: Request, res: Response) {
-    const categories = await db.query.categories.findMany({
-      with: { books: true },
-    });
+    const method = `${req.query.method}`;
 
+    let result;
+    if (method === "search") {
+      // if the method is `search`, it needs `q`
+      const q = `${req.query.q || ""}`;
+      if (q === "") {
+        return res.status(400).json({ message: "invalid query (search)" });
+      }
+
+      result = await db.query.categories.findMany({
+        with: { books: true },
+        where: ilike(categories.name, `%${q}%`),
+      });
+    } else {
+      result = await db.query.categories.findMany({ with: { books: true } });
+    }
+    
     // apparently, .[*].books.[*].price is number instead of string
-    for (const category of categories) {
+    for (const category of result) {
       for (const book of category.books) {
         book.price = book.price.toString();
       }
     }
 
-    res.json(categories);
+    res.json(result);
   }
 
   async add(req: Request, res: Response) {

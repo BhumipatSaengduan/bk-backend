@@ -13,6 +13,11 @@ export const SALT = 8;
 
 export const isAuthenticated = passport.authenticate("jwt", { session: false });
 
+export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if ((req.user as User).role !== "admin") res.status(401).send("Unauthorized");
+  else next();
+};
+
 export default class Authentication {
   router = Router();
 
@@ -33,9 +38,8 @@ export default class Authentication {
     );
     this.router.get("/google/callback", this.googleCallback);
 
-    this.router.get("/me", isAuthenticated, (req, res) => {
-      res.json(req.user)
-    })
+    this.router.get("/set-password", isAuthenticated, this.setPassword);
+    this.router.get("/set-role", isAuthenticated, isAdmin, this.setRole);
   }
 
   async registerLocalAccount(req: Request, res: Response) {
@@ -92,6 +96,47 @@ export default class Authentication {
         res.json({ token: newJwt(user!) });
       }
     )(req, res, next);
+  }
+
+  async setPassword(req: Request, res: Response) {
+    const { id } = req.user as any;
+
+    let password;
+    try {
+      password = req.body.password;
+      if (!password) throw new Error();
+    } catch (err) {
+      return res.status(400).json({ message: "invalid body" });
+    }
+
+    await db
+      .update(users)
+      .set({ password: await bcrypt.hash(password, SALT) })
+      .where(eq(users.id, id));
+  }
+
+  async setRole(req: Request, res: Response) {
+    const userId = parseInt(req.params.userId);
+
+    let role;
+    try {
+      role = req.body.role;
+    } catch (err) {
+      return res.status(400).json({ message: "invalid body" });
+    }
+
+    if (role === "regular") {
+      await db
+        .update(users)
+        .set({ role: "regular" })
+        .where(eq(users.id, userId));
+      res.json({ role: "regular" });
+    } else if (role === "admin") {
+      await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));
+      res.json({ role: "admin" });
+    } else {
+      res.status(400).json({ message: "unknown role" });
+    }
   }
 }
 

@@ -3,6 +3,8 @@ import "dotenv/config";
 export interface Configuration {
   port: number;
   jwtSecret: string;
+  allowedOrigins: string | string[];
+  uploadDir: string
   database: {
     host: string;
     port: number;
@@ -13,11 +15,12 @@ export interface Configuration {
   googleOAuth: {
     clientId: string;
     clientSecret: string;
-  }
+  };
 }
 
 const REQUIRED_ENVS = [
   "JWT_SECRET",
+  "CORS_ALLOWED_ORIGINS",
   "DB_HOST",
   "DB_USER",
   "DB_PASSWORD",
@@ -27,9 +30,15 @@ const REQUIRED_ENVS = [
 export function getConfig(): Configuration {
   for (const env of REQUIRED_ENVS) requireEnv(env);
 
+  /* CORS */
+  const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "").split(",");
+  /* CORS */
+
   const config: Configuration = {
-    port: getEnvNumber("PORT")  || 3000,
+    port: getEnvNumber("PORT") || 3000,
     jwtSecret: process.env.JWT_SECRET!,
+    allowedOrigins,
+    uploadDir: process.env.UPLOAD_FOLDER_NAME || "uploads",
     database: {
       host: process.env.DB_HOST!,
       port: getEnvNumber("DB_PORT") || 5432,
@@ -40,7 +49,7 @@ export function getConfig(): Configuration {
     googleOAuth: {
       clientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET!,
-    }
+    },
   };
 
   return config;

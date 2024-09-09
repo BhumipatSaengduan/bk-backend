@@ -86,7 +86,6 @@ export default class Book {
 
       result = await db.query.books.findMany({
         with: { category: true },
-        orderBy: [desc(books.sold), desc(books.createdAt)],
         where: ilike(books.title, `%${q}%`),
       });
     } else {

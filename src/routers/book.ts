@@ -3,7 +3,7 @@ import { books } from "@/db/schema";
 import "@passport/index";
 
 import { getConfig } from "@/config";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { Request, Response, Router } from "express";
 import fs from "fs";
 import multer from "multer";
@@ -64,8 +64,24 @@ export default class Book {
   }
 
   async get(req: Request, res: Response) {
-    const books = await db.query.books.findMany({ with: { category: true } });
-    res.json(books);
+    const method = `${req.query.method}`;
+
+    let result;
+    if (method === "newest") {
+      result = await db.query.books.findMany({
+        with: { category: true },
+        orderBy: [desc(books.createdAt), desc(books.sold)],
+      });
+    } else if (method === "best-selling") {
+      result = await db.query.books.findMany({
+        with: { category: true },
+        orderBy: [desc(books.sold), desc(books.createdAt)],
+      });
+    } else {
+      result = await db.query.books.findMany({ with: { category: true } });
+    }
+
+    res.json(result);
   }
 
   async add(req: Request, res: Response) {
@@ -131,7 +147,7 @@ function getDataFromBody(body: any) {
     title,
     coverImage,
     description: description || "",
-    categoryId: `${categoryId}` === "" ? null : parseInt(categoryId),
+    categoryId: `${categoryId}` === "null" ? null : parseInt(categoryId),
     stocksAvailable:
       `${stocksAvailable}` === "" ? 0 : parseInt(stocksAvailable),
     sold: `${sold}` === "" ? 0 : parseInt(sold),

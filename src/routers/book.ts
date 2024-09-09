@@ -3,7 +3,7 @@ import { books } from "@/db/schema";
 import "@passport/index";
 
 import { getConfig } from "@/config";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, ilike } from "drizzle-orm";
 import { Request, Response, Router } from "express";
 import fs from "fs";
 import multer from "multer";
@@ -76,6 +76,18 @@ export default class Book {
       result = await db.query.books.findMany({
         with: { category: true },
         orderBy: [desc(books.sold), desc(books.createdAt)],
+      });
+    } else if (method === "search") {
+      // if the method is `search`, it needs `q`
+      const q = `${req.query.q || ""}`;
+      if (q === "") {
+        return res.status(400).json({ message: "invalid query (search)" });
+      }
+
+      result = await db.query.books.findMany({
+        with: { category: true },
+        orderBy: [desc(books.sold), desc(books.createdAt)],
+        where: ilike(books.title, `%${q}%`),
       });
     } else {
       result = await db.query.books.findMany({ with: { category: true } });

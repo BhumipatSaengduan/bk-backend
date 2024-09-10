@@ -50,7 +50,7 @@ export function getConfig(): Configuration {
 
 function requireEnv(name: string) {
   const raw = process.env[name] ?? "";
-  if (raw.trim() === "") throw new Error(`${name} is unset or empty`);
+  if (!raw.trim()) throw new Error(`${name} is unset or empty`);
 }
 
 function getEnvNumber(name: string): number | undefined {

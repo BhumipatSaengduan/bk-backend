@@ -27,8 +27,8 @@ export default class Category {
     let result;
     if (method === "search") {
       // if the method is `search`, it needs `q`
-      const q = `${req.query.q || ""}`;
-      if (q === "") return res.status(400).json({ message: "invalid query (search)" });
+      const q = req.query.q ?? "";
+      if (!q) return res.status(400).json({ message: "invalid query (search)" });
 
       result = await db.query.categories.findMany({
         where: ilike(categories.name, `%${q}%`),
@@ -46,8 +46,8 @@ export default class Category {
     let result;
     if (method === "search") {
       // if the method is `search`, it needs `q`
-      const q = `${req.query.q || ""}`;
-      if (q === "") return res.status(400).json({ message: "invalid query (search)" });
+      const q = req.query.q ?? "";
+      if (!q) return res.status(400).json({ message: "invalid query (search)" });
 
       result = await db.query.categories.findMany({
         with: { books: true },

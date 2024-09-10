@@ -76,8 +76,8 @@ export default class Book {
       });
     } else if (method === "search") {
       // if the method is `search`, it needs `q`
-      const q = `${req.query.q || ""}`;
-      if (q === "") return res.status(400).json({ message: "invalid query (search)" });
+      const q = req.query.q ?? "";
+      if (!q) return res.status(400).json({ message: "invalid query (search)" });
 
       result = await db.query.books.findMany({
         with: { category: true },
@@ -137,10 +137,10 @@ function getDataFromBody(body: any) {
   return {
     title,
     coverImage,
-    description: description || "",
-    categoryId: `${categoryId}` === "null" ? null : parseInt(categoryId),
-    stocksAvailable: `${stocksAvailable}` === "" ? 0 : parseInt(stocksAvailable),
-    sold: `${sold}` === "" ? 0 : parseInt(sold),
+    description: description ?? "",
+    categoryId: categoryId ?? "" ? parseInt(categoryId) : null,
+    stocksAvailable: stocksAvailable ?? "" ? parseInt(stocksAvailable) : 0,
+    sold: sold ?? "" ? parseInt(sold) : 0,
     price: price,
   };
 }

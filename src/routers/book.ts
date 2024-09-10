@@ -1,9 +1,9 @@
 import { db } from "@/db";
-import { books } from "@/db/schema";
+import { User, books, categories, usersToBooks } from "@/db/schema";
 import "@passport/index";
 
 import { getConfig } from "@/config";
-import { desc, eq, ilike } from "drizzle-orm";
+import { and, desc, eq, ilike } from "drizzle-orm";
 import { Request, Response, Router } from "express";
 import fs from "fs";
 import multer from "multer";
@@ -47,9 +47,14 @@ export default class Book {
 
   register() {
     this.router.get("/", this.get);
+    this.router.put("/:bookId", this.getById);
     this.router.post("/", isAuthenticated, isAdmin, this.add);
     this.router.put("/:bookId", isAuthenticated, isAdmin, this.update);
     this.router.delete("/:bookId", isAuthenticated, isAdmin, this.delete);
+
+    this.router.get("/favorites", isAuthenticated, this.favorites);
+    this.router.get("/:bookId/favorite", isAuthenticated, this.favorite);
+    this.router.get("/:bookId/unfavorite", isAuthenticated, this.unfavorite);
 
     this.router.post(
       "/upload-cover",
@@ -90,6 +95,15 @@ export default class Book {
     res.json(result);
   }
 
+  async getById(req: Request, res: Response) {
+    const bookId = parseInt(req.params.bookId);
+
+    const book = await db.query.books.findFirst({ where: eq(books.id, bookId) });
+
+    if (book) res.json(book);
+    else res.status(404).json({ message: "not found" });
+  }
+
   async add(req: Request, res: Response) {
     let data;
     try {
@@ -122,6 +136,54 @@ export default class Book {
     const returning = await db.delete(books).where(eq(books.id, bookId)).returning();
     if (returning[0]) res.status(204).end();
     else res.status(404).json({ message: "not found" });
+  }
+
+  async favorites(req: Request, res: Response) {
+    const user = req.user as User;
+
+    const result = await db
+      .select({
+        id: books.id,
+        title: books.title,
+        coverImage: books.coverImage,
+        description: books.description,
+        stocksAvailable: books.stocksAvailable,
+        sold: books.sold,
+        price: books.price,
+        category: {
+          id: categories.id,
+          name: categories.name,
+        },
+      })
+      .from(books)
+      .innerJoin(usersToBooks, eq(usersToBooks.userId, user.id))
+      .innerJoin(categories, eq(categories.id, books.categoryId));
+
+    res.json(result);
+  }
+
+  async favorite(req: Request, res: Response) {
+    const bookId = parseInt(req.params.bookId);
+    const user = req.user as User;
+
+    const book = await db.query.books.findFirst({ where: eq(books.id, bookId) });
+    if (!book) res.status(404).json({ message: "not found" });
+
+    await db.insert(usersToBooks).values({ bookId: bookId, userId: user.id });
+    res.json({ message: "book favorited" });
+  }
+
+  async unfavorite(req: Request, res: Response) {
+    const bookId = parseInt(req.params.bookId);
+    const user = req.user as User;
+
+    const book = await db.query.books.findFirst({ where: eq(books.id, bookId) });
+    if (!book) res.status(404).json({ message: "not found" });
+
+    await db
+      .delete(usersToBooks)
+      .where(and(eq(usersToBooks.bookId, bookId), eq(usersToBooks.userId, user.id)));
+    res.json({ message: "book unfavorited" });
   }
 
   uploadCoverImage(req: Request, res: Response) {

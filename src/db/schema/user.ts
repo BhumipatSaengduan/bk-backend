@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
-import { pgEnum, pgTable, serial, varchar } from "drizzle-orm/pg-core";
+import { integer, pgEnum, pgTable, primaryKey, serial, varchar } from "drizzle-orm/pg-core";
+import { books } from "./book";
 import { carts } from "./cart";
 
 export const roleEnum = pgEnum("role", ["regular", "admin"]);
@@ -12,9 +13,29 @@ export const users = pgTable("users", {
   role: roleEnum("role").notNull().default("regular"),
 });
 
-export const usersRelations = relations(users, ({ one }) => ({
+export const usersRelations = relations(users, ({ one, many }) => ({
   cart: one(carts),
+  favorites: many(books),
 }));
 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export const usersToBooks = pgTable(
+  "users_to_books",
+  {
+    bookId: integer("book_id")
+      .notNull()
+      .references(() => books.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => books.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull().default(1),
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.bookId, t.userId] }) })
+);
+
+export const booksToBooksRelations = relations(usersToBooks, ({ one }) => ({
+  book: one(books, { fields: [usersToBooks.bookId], references: [books.id] }),
+  user: one(users, { fields: [usersToBooks.userId], references: [users.id] }),
+}));

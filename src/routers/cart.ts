@@ -11,17 +11,13 @@ export default class Cart {
   constructor() {
     this.router.use(isAuthenticated);
     this.router.use(this.createUserCart);
-    
+
     this.register();
   }
 
   register() {}
 
-  private async createUserCart(
-    req: Request,
-    res: Response,
-    next: NextFunction
-  ) {
+  private async createUserCart(req: Request, res: Response, next: NextFunction) {
     const user = req.user as User;
     await db.insert(carts).values({ id: user.id }).onConflictDoNothing();
     next();

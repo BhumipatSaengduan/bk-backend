@@ -49,11 +49,7 @@ export default class Authentication {
       const existingUser = await db.query.users.findFirst({
         where: eq(users.email, email),
       });
-      if (existingUser) {
-        return res
-          .status(400)
-          .json({ message: "this email is already registered" });
-      }
+      if (existingUser) return res.status(400).json({ message: "this email is already registered" });
 
       const hashed = await bcrypt.hash(password, SALT);
       const returning = await db
@@ -73,29 +69,21 @@ export default class Authentication {
   }
 
   login(req: Request, res: Response, next: NextFunction) {
-    passport.authenticate(
-      "local",
-      { session: false },
-      (err: any, user: User | null, info: any) => {
-        const error = validateState(res, [err, user, info]);
-        if (error) return error;
+    passport.authenticate("local", { session: false }, (err: any, user: User | null, info: any) => {
+      const error = validateState(res, [err, user, info]);
+      if (error) return error;
 
-        res.json({ token: newJwt(user!) });
-      }
-    )(req, res, next);
+      res.json({ token: newJwt(user!) });
+    })(req, res, next);
   }
 
   googleCallback(req: Request, res: Response, next: NextFunction) {
-    passport.authenticate(
-      "google",
-      { session: false },
-      (err: any, user: User | null, info: any) => {
-        const error = validateState(res, [err, user, info]);
-        if (error) return error;
+    passport.authenticate("google", { session: false }, (err: any, user: User | null, info: any) => {
+      const error = validateState(res, [err, user, info]);
+      if (error) return error;
 
-        res.json({ token: newJwt(user!) });
-      }
-    )(req, res, next);
+      res.json({ token: newJwt(user!) });
+    })(req, res, next);
   }
 
   async setPassword(req: Request, res: Response) {
@@ -126,10 +114,7 @@ export default class Authentication {
     }
 
     if (role === "regular") {
-      await db
-        .update(users)
-        .set({ role: "regular" })
-        .where(eq(users.id, userId));
+      await db.update(users).set({ role: "regular" }).where(eq(users.id, userId));
       res.json({ role: "regular" });
     } else if (role === "admin") {
       await db.update(users).set({ role: "admin" }).where(eq(users.id, userId));

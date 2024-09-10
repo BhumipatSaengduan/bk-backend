@@ -4,7 +4,7 @@ export interface Configuration {
   port: number;
   jwtSecret: string;
   allowedOrigins: string | string[];
-  uploadDir: string
+  uploadDir: string;
   database: {
     host: string;
     port: number;
@@ -18,14 +18,7 @@ export interface Configuration {
   };
 }
 
-const REQUIRED_ENVS = [
-  "JWT_SECRET",
-  "CORS_ALLOWED_ORIGINS",
-  "DB_HOST",
-  "DB_USER",
-  "DB_PASSWORD",
-  "DB_NAME",
-];
+const REQUIRED_ENVS = ["JWT_SECRET", "CORS_ALLOWED_ORIGINS", "DB_HOST", "DB_USER", "DB_PASSWORD", "DB_NAME"];
 
 export function getConfig(): Configuration {
   for (const env of REQUIRED_ENVS) requireEnv(env);

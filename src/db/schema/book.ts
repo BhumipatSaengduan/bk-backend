@@ -1,13 +1,5 @@
 import { relations } from "drizzle-orm";
-import {
-  integer,
-  numeric,
-  pgTable,
-  serial,
-  text,
-  timestamp,
-  varchar,
-} from "drizzle-orm/pg-core";
+import { integer, numeric, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 import { carts } from "./cart";
 import { categories } from "./category";
 

@@ -28,9 +28,7 @@ export default class Category {
     if (method === "search") {
       // if the method is `search`, it needs `q`
       const q = `${req.query.q || ""}`;
-      if (q === "") {
-        return res.status(400).json({ message: "invalid query (search)" });
-      }
+      if (q === "") return res.status(400).json({ message: "invalid query (search)" });
 
       result = await db.query.categories.findMany({
         where: ilike(categories.name, `%${q}%`),
@@ -49,9 +47,7 @@ export default class Category {
     if (method === "search") {
       // if the method is `search`, it needs `q`
       const q = `${req.query.q || ""}`;
-      if (q === "") {
-        return res.status(400).json({ message: "invalid query (search)" });
-      }
+      if (q === "") return res.status(400).json({ message: "invalid query (search)" });
 
       result = await db.query.categories.findMany({
         with: { books: true },
@@ -60,7 +56,7 @@ export default class Category {
     } else {
       result = await db.query.categories.findMany({ with: { books: true } });
     }
-    
+
     // apparently, .[*].books.[*].price is number instead of string
     for (const category of result) {
       for (const book of category.books) {
@@ -93,21 +89,14 @@ export default class Category {
       return res.status(400).json({ message: "invalid body" });
     }
 
-    const returning = await db
-      .update(categories)
-      .set(data)
-      .where(eq(categories.id, categoryId))
-      .returning();
+    const returning = await db.update(categories).set(data).where(eq(categories.id, categoryId)).returning();
     if (returning[0]) res.end();
     else res.status(404).json({ message: "not found" });
   }
 
   async delete(req: Request, res: Response) {
     const categoryId = parseInt(req.params.categoryId);
-    const returning = await db
-      .delete(categories)
-      .where(eq(categories.id, categoryId))
-      .returning();
+    const returning = await db.delete(categories).where(eq(categories.id, categoryId)).returning();
     if (returning[0]) res.status(204).end();
     else res.status(404).json({ message: "not found" });
   }

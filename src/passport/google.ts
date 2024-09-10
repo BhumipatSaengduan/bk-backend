@@ -25,18 +25,11 @@ export default new Strategy(
 
       // if an account not linked with google but email is registered
       // then link the google to it
-      const updatedUser = await db
-        .update(users)
-        .set({ googleId })
-        .where(eq(users.email, email))
-        .returning();
+      const updatedUser = await db.update(users).set({ googleId }).where(eq(users.email, email)).returning();
 
       // if no user returned means no user with this email
       if (!updatedUser[0]) {
-        const addedUser = await db
-          .insert(users)
-          .values({ email, googleId, role: "regular" })
-          .returning();
+        const addedUser = await db.insert(users).values({ email, googleId, role: "regular" }).returning();
 
         // if no user returns (which shouldn't happen)
         if (!addedUser) done(new Error("failed to add user"), false);

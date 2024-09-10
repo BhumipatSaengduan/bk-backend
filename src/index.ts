@@ -25,10 +25,7 @@ class Server {
     this.app.use("/cart", new routers.Cart().router);
     this.app.use("/categories", new routers.Category().router);
 
-    this.app.use(
-      "/images",
-      express.static(path.join(__dirname, "..", this.config.uploadDir))
-    );
+    this.app.use("/images", express.static(path.join(__dirname, "..", this.config.uploadDir)));
   }
 
   start() {

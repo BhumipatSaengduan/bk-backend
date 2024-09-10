@@ -22,10 +22,7 @@ export default class Book {
     },
     filename: (req, file, cb) => {
       const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      cb(
-        null,
-        file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname)
-      );
+      cb(null, file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname));
     },
   });
   upload = multer({
@@ -80,9 +77,7 @@ export default class Book {
     } else if (method === "search") {
       // if the method is `search`, it needs `q`
       const q = `${req.query.q || ""}`;
-      if (q === "") {
-        return res.status(400).json({ message: "invalid query (search)" });
-      }
+      if (q === "") return res.status(400).json({ message: "invalid query (search)" });
 
       result = await db.query.books.findMany({
         with: { category: true },
@@ -117,21 +112,14 @@ export default class Book {
       return res.status(400).json({ message: "invalid body" });
     }
 
-    const returning = await db
-      .update(books)
-      .set(data)
-      .where(eq(books.id, bookId))
-      .returning();
+    const returning = await db.update(books).set(data).where(eq(books.id, bookId)).returning();
     if (returning[0]) res.end();
     else res.status(404).json({ message: "not found" });
   }
 
   async delete(req: Request, res: Response) {
     const bookId = parseInt(req.params.bookId);
-    const returning = await db
-      .delete(books)
-      .where(eq(books.id, bookId))
-      .returning();
+    const returning = await db.delete(books).where(eq(books.id, bookId)).returning();
     if (returning[0]) res.status(204).end();
     else res.status(404).json({ message: "not found" });
   }
@@ -145,22 +133,13 @@ export default class Book {
 }
 
 function getDataFromBody(body: any) {
-  const {
-    title,
-    coverImage,
-    description,
-    categoryId,
-    stocksAvailable,
-    sold,
-    price,
-  } = body;
+  const { title, coverImage, description, categoryId, stocksAvailable, sold, price } = body;
   return {
     title,
     coverImage,
     description: description || "",
     categoryId: `${categoryId}` === "null" ? null : parseInt(categoryId),
-    stocksAvailable:
-      `${stocksAvailable}` === "" ? 0 : parseInt(stocksAvailable),
+    stocksAvailable: `${stocksAvailable}` === "" ? 0 : parseInt(stocksAvailable),
     sold: `${sold}` === "" ? 0 : parseInt(sold),
     price: price,
   };

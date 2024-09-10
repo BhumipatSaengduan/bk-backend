@@ -15,7 +15,7 @@ export const users = pgTable("users", {
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   cart: one(carts),
-  favorites: many(books),
+  favorites: many(usersToBooks),
 }));
 
 export type User = typeof users.$inferSelect;
@@ -30,12 +30,11 @@ export const usersToBooks = pgTable(
     userId: integer("user_id")
       .notNull()
       .references(() => books.id, { onDelete: "cascade" }),
-    amount: integer("amount").notNull().default(1),
   },
   (t) => ({ pk: primaryKey({ columns: [t.bookId, t.userId] }) })
 );
 
-export const booksToBooksRelations = relations(usersToBooks, ({ one }) => ({
+export const usersToBooksRelations = relations(usersToBooks, ({ one }) => ({
   book: one(books, { fields: [usersToBooks.bookId], references: [books.id] }),
   user: one(users, { fields: [usersToBooks.userId], references: [users.id] }),
 }));

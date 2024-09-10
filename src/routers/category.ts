@@ -1,10 +1,11 @@
 import { db } from "@/db";
-import { categories } from "@/db/schema";
+import { bookAllFields, books, categories, categoriesToBooks } from "@/db/schema";
 import "@passport/index";
 
-import { eq, ilike } from "drizzle-orm";
+import { eq, ilike, inArray } from "drizzle-orm";
 import { Request, Response, Router } from "express";
 import { isAdmin, isAuthenticated } from "./auth";
+import { addCategoriesToEachBooks } from "./book";
 
 export default class Category {
   router = Router();
@@ -15,56 +16,48 @@ export default class Category {
 
   register() {
     this.router.get("/", this.get);
-    this.router.get("/books", this.getWithBooks);
     this.router.post("/", isAuthenticated, isAdmin, this.add);
     this.router.put("/:categoryId", isAuthenticated, isAdmin, this.update);
     this.router.delete("/:categoryId", isAuthenticated, isAdmin, this.delete);
   }
 
   async get(req: Request, res: Response) {
-    const method = `${req.query.method}`;
+    const method = req.query.method ?? "";
 
-    let result;
     if (method === "search") {
       // if the method is `search`, it needs `q`
       const q = req.query.q ?? "";
       if (!q) return res.status(400).json({ message: "invalid query (search)" });
 
-      result = await db.query.categories.findMany({
+      const result = await db.query.categories.findMany({
         where: ilike(categories.name, `%${q}%`),
       });
-    } else {
-      result = await db.query.categories.findMany({});
-    }
+      res.json(result);
+    } else if (method === "books") {
+      // if the method is `books`, it needs `q` for categories
+      // category id splits by a comma
+      const q = (req.query.q ?? "").toString().split(",");
+      if (q.length < 1) return res.status(400).json({ message: "invalid query (search)" });
 
-    res.json(result);
-  }
-
-  async getWithBooks(req: Request, res: Response) {
-    const method = `${req.query.method}`;
-
-    let result;
-    if (method === "search") {
-      // if the method is `search`, it needs `q`
-      const q = req.query.q ?? "";
-      if (!q) return res.status(400).json({ message: "invalid query (search)" });
-
-      result = await db.query.categories.findMany({
-        with: { books: true },
-        where: ilike(categories.name, `%${q}%`),
-      });
-    } else {
-      result = await db.query.categories.findMany({ with: { books: true } });
-    }
-
-    // apparently, .[*].books.[*].price is number instead of string
-    for (const category of result) {
-      for (const book of category.books) {
-        book.price = book.price.toString();
+      const categoryIds: number[] = [];
+      // if any values in `q` is not a number then 400
+      try {
+        for (const id of q) categoryIds.push(parseInt(id));
+      } catch (error) {
+        return res.status(400).json({ message: "invalid query (search)" });
       }
-    }
 
-    res.json(result);
+      let result = await db
+        .selectDistinctOn([books.id], bookAllFields)
+        .from(books)
+        .innerJoin(categoriesToBooks, eq(categoriesToBooks.bookId, books.id)) // get category ids from the book
+        .where(inArray(categoriesToBooks.categoryId, categoryIds)); // where the categories must be in the `categoryIds`
+      result = await addCategoriesToEachBooks(result);
+
+      res.json(result);
+    } else {
+      res.json(await db.query.categories.findMany());
+    }
   }
 
   async add(req: Request, res: Response) {

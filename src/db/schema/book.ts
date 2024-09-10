@@ -1,17 +1,13 @@
 import { relations } from "drizzle-orm";
 import { integer, numeric, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
-import { carts } from "./cart";
-import { categories } from "./category";
-import { users } from "./user";
+import { categoriesToBooks } from "./category";
+import { usersToBooks } from "./user";
 
 export const books = pgTable("books", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   coverImage: varchar("cover_image", { length: 1023 }).notNull(),
   description: text("description").notNull().default(""),
-  categoryId: integer("category_id").references(() => categories.id, {
-    onDelete: "set null",
-  }),
   stocksAvailable: integer("stocks_available").notNull().default(0),
   sold: integer("sold").notNull().default(0),
   price: numeric("price").notNull(),
@@ -19,13 +15,21 @@ export const books = pgTable("books", {
 });
 
 export const booksRelation = relations(books, ({ one, many }) => ({
-  category: one(categories, {
-    fields: [books.categoryId],
-    references: [categories.id],
-  }),
-  carts: many(carts),
-  favoritesBy: many(users),
+  categories: many(categoriesToBooks),
+  carts: many(categoriesToBooks),
+  favoritesBy: many(usersToBooks),
 }));
 
 export type Book = typeof books.$inferSelect;
 export type NewBook = typeof books.$inferInsert;
+
+export const bookAllFields = {
+  id: books.id,
+  title: books.title,
+  coverImage: books.coverImage,
+  description: books.description,
+  stocksAvailable: books.stocksAvailable,
+  sold: books.sold,
+  price: books.price,
+  createdAt: books.createdAt,
+};

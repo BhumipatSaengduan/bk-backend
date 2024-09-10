@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1725856281576,
-      "tag": "0000_concerned_gunslinger",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1725872856361,
-      "tag": "0001_dapper_doctor_doom",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1725943653296,
-      "tag": "0002_aspiring_gateway",
+      "when": 1725970728129,
+      "tag": "0000_faulty_eternity",
       "breakpoints": true
     }
   ]

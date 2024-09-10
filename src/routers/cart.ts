@@ -1,10 +1,11 @@
 import "@passport/index";
 
 import { db } from "@/db";
-import { User, books, booskToCarts, carts, categories } from "@/db/schema";
+import { User, bookAllFields, books, carts, cartsToBooks } from "@/db/schema";
 import { and, eq } from "drizzle-orm";
 import { NextFunction, Request, Response, Router } from "express";
 import { isAuthenticated } from "./auth";
+import { addCategoriesToEachBooks } from "./book";
 
 export default class Cart {
   router = Router();
@@ -24,22 +25,11 @@ export default class Cart {
 
   async getItems(req: Request, res: Response) {
     const userId = (req.user as User).id;
-    const items = await db
-      .select({
-        id: books.id,
-        title: books.title,
-        coverImage: books.coverImage,
-        price: books.price,
-        stocksAvailable: books.stocksAvailable,
-        amount: booskToCarts.amount,
-        category: {
-          id: categories.id,
-          name: categories.name,
-        },
-      })
+    let items = await db
+      .select(bookAllFields)
       .from(books)
-      .innerJoin(booskToCarts, eq(booskToCarts.cartId, userId))
-      .innerJoin(categories, eq(categories.id, books.categoryId));
+      .innerJoin(cartsToBooks, eq(cartsToBooks.cartId, userId)); // the book needs to be in the cart
+    items = await addCategoriesToEachBooks(items);
 
     let totalPrice = 0;
     for (const item of items) {
@@ -67,21 +57,21 @@ export default class Cart {
       return res.status(400).json({ message: "not sufficient books" });
     }
 
-    const itemWhere = and(eq(booskToCarts.bookId, data.bookId), eq(booskToCarts.cartId, userId));
+    const itemWhere = and(eq(cartsToBooks.bookId, data.bookId), eq(cartsToBooks.cartId, userId));
 
     if (data.amount < 1) {
       // if amount < 1 then delete the item from the cart
-      await db.delete(booskToCarts).where(itemWhere);
+      await db.delete(cartsToBooks).where(itemWhere);
       return res.status(204).end();
     }
 
-    const existingItem = await db.query.booskToCarts.findFirst({ where: itemWhere });
+    const existingItem = await db.query.cartsToBooks.findFirst({ where: itemWhere });
     if (existingItem) {
       // if already exists, update the amount
-      await db.update(booskToCarts).set({ amount: data.amount }).where(itemWhere);
+      await db.update(cartsToBooks).set({ amount: data.amount }).where(itemWhere);
     } else {
       // otherwise, add new with the amount
-      await db.insert(booskToCarts).values({ bookId: data.bookId, cartId: userId, amount: data.amount });
+      await db.insert(cartsToBooks).values({ bookId: data.bookId, cartId: userId, amount: data.amount });
     }
 
     res.json({ amount: data.amount });
@@ -96,11 +86,11 @@ export default class Cart {
         price: books.price,
         stocksAvailable: books.stocksAvailable,
         sold: books.sold,
-        amount: booskToCarts.amount,
+        amount: cartsToBooks.amount,
       })
-      .from(booskToCarts)
-      .where(eq(booskToCarts.cartId, userId))
-      .innerJoin(books, eq(books.id, booskToCarts.bookId));
+      .from(cartsToBooks)
+      .where(eq(cartsToBooks.cartId, userId))
+      .innerJoin(books, eq(books.id, cartsToBooks.bookId));
 
     // check available stocks for each book
     const notSufficientBooks = [];

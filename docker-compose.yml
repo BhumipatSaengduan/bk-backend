@@ -22,7 +22,9 @@ services:
     environment:
       - POSTGRES_PASSWORD=postgres
     volumes:
-      - ./volumes/postgres:/var/lib/postgresql/data
+      - bookStore-postgres:/var/lib/postgresql/data
+    networks:
+      - bookStore-net
 
   api:
     depends_on:
@@ -40,4 +42,13 @@ services:
     env_file:
       - .env
     volumes:
-      - ./volumes/uploads:/app/uploads
+      - bookStore-uploads:/app/uploads
+    networks:
+      - bookStore-net
+
+volumes:
+  bookStore-postgres:
+  bookStore-uploads:
+
+networks:
+  bookStore-net:

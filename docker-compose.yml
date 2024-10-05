@@ -11,9 +11,12 @@
 # docker compose run --rm -e "ADMIN_PASSWORD=very_safe_admin_password" api node ./scripts/add-admin-user.js
 # docker compose up -d api
 
+name: bookStore
+
 services:
   postgres:
     image: postgres:17
+    container_name: bs-database
     ports:
       - 5432:5432
     environment:
@@ -26,6 +29,7 @@ services:
       - postgres
     build: .
     command: npm run start:prod
+    container_name: bk-backend
     ports: 
       - 3000:3000
     environment:

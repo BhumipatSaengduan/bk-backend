@@ -38,8 +38,8 @@ export default class Authentication {
     );
     this.router.get("/google/callback", this.googleCallback);
 
-    this.router.get("/set-password", isAuthenticated, this.setPassword);
-    this.router.get("/set-role", isAuthenticated, isAdmin, this.setRole);
+    this.router.post("/set-password", isAuthenticated, this.setPassword);
+    this.router.post("/set-role", isAuthenticated, isAdmin, this.setRole);
   }
 
   async registerLocalAccount(req: Request, res: Response) {

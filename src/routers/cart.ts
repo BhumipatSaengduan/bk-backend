@@ -51,7 +51,7 @@ export default class Cart {
     }
 
     const book = await db.query.books.findFirst({ where: eq(books.id, data.bookId) });
-    if (!book) return res.status(500).json({ message: "book not found " });
+    if (!book) return res.status(500).json({ message: "book not found" });
 
     if (book.stocksAvailable - data.amount < 0) {
       return res.status(400).json({ message: "not sufficient books" });
